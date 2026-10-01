@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sal's Wheel of Diagnostic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial Black', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #FFD700;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5), 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 3px;
+        }
+
+        .wheel-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 45px solid #FFD700;
+            z-index: 10;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+        }
+
+        canvas {
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(255,215,0,0.3), 0 0 80px rgba(0,0,0,0.5);
+        }
+
+        #spinBtn {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            color: #1a1a2e;
+            border: none;
+            padding: 18px 60px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 8px 25px rgba(255,165,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        #spinBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255,165,0,0.6);
+        }
+
+        #spinBtn:active { transform: translateY(0); }
+
+        #spinBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #result {
+            color: #fff;
+            font-size: 2rem;
+            margin-top: 25px;
+            min-height: 50px;
+            text-shadow: 0 0 15px rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.5rem; }
+            #result { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔧 Sal's Wheel of Diagnostic 🔧</h1>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="400" height="400"></canvas>
+    </div>
+
+    <button id="spinBtn" onclick="spin()">🎰 SPIN!</button>
+    <div id="result"></div>
+
+<script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const segments = ['TIRES', 'BRAKES', 'EASY PEASY'];
+    const colors = ['#e74c3c', '#3498db', '#2ecc40'];
+    const emojis = ['🛞', '🛑', '😎'];
+    const numSeg = segments.length;
+    const arc = (2 * Math.PI) / numSeg;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = 185;
+
+    let angle = 0;
+    let spinning = false;
+    let velocity = 0;
+
+    function drawWheel() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        /* outer gold ring */
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 8, 0, 2 * Math.PI);
+        ctx.fillStyle = '#FFD700';
+        ctx.fill();
+
+        /* dots around ring */
+        for (let d = 0; d < 20; d++) {
+            const da = (d / 20) * 2 * Math.PI;
+            const dx = cx + (radius + 8) * Math.cos(da);
+            const dy = cy + (radius + 8) * Math.sin(da);
+            ctx.beginPath();
+            ctx.arc(dx, dy, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = d % 2 === 0 ? '#fff' : '#FFA500';
+            ctx.fill();
+        }
+
+        /* segments */
+        for (let i = 0; i < numSeg; i++) {
+            const start = angle + i * arc;
+            const end = start + arc;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, start, end);
+            ctx.closePath();
+            ctx.fillStyle = colors[i];
+            ctx.fill();
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            /* text */
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(start + arc / 2);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 20px Arial Black, Arial';
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 4;
+            ctx.fillText(segments[i], radius * 0.58, 7);
+            ctx.restore();
+        }
+
+        /* center hub */
+        ctx.beginPath();
+        ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+        const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, 30);
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(1, '#FFD700');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#c8a800';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    function getWinner() {
+        let norm = angle % (2 * Math.PI);
+        if (norm < 0) norm += 2 * Math.PI;
+        // pointer at top = -PI/2
+        let ptr = ((-Math.PI / 2) - norm) % (2 * Math.PI);
+        if (ptr < 0) ptr += 2 * Math.PI;
+        return Math.floor(ptr / arc) % numSeg;
+    }
+
+    function spin() {
+        if (spinning) return;
+        spinning = true;
+        document.getElementById('spinBtn').disabled = true;
+        document.getElementById('result').textContent = '';
+
+        velocity = Math.random() * 15 + 20; // random speed
+
+        requestAnimationFrame(animate);
+    }
+
+    function animate() {
+        angle += velocity * (Math.PI / 180);
+        velocity *= 0.986;
+
+        drawWheel();
+
+        if (velocity > 0.15) {
+            requestAnimationFrame(animate);
+        } else {
+            spinning = false;
+            document.getElementById('spinBtn').disabled = false;
+            const winner = getWinner();
+            document.getElementById('result').textContent =
+                emojis[winner] + '  ' + segments[winner] + '!  ' + emojis[winner];
+        }
+    }
+
+    drawWheel();
+</script>
+
+</body>
+</html>
